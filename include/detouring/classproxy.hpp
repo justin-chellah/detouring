@@ -228,11 +228,18 @@ namespace Detouring
 			if( !shared_state )
 				return false;
 
-			const auto it = shared_state->hooks.find( reinterpret_cast<void *>( original ) );
-			if( it != shared_state->hooks.end( ) )
+			void *address = reinterpret_cast<void *>( original );
+
+			const auto it = shared_state->hooks.find( address );
+			if ( it != shared_state->hooks.end( ) )
 			{
-				shared_state->hooks.erase( it );
-				return true;
+				Detouring::Hook& hook = shared_state->hooks[address];
+				if ( hook.Disable( ) )
+				{
+					hook.Destroy( )
+					shared_state->hooks.erase( it );
+					return true;
+				}
 			}
 
 			return false;
