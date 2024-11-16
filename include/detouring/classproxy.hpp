@@ -236,7 +236,7 @@ namespace Detouring
 				Detouring::Hook& hook = shared_state->hooks[address];
 				if ( hook.Disable( ) )
 				{
-					hook.Destroy( )
+					hook.Destroy( );
 					shared_state->hooks.erase( it );
 					return true;
 				}
@@ -367,6 +367,27 @@ namespace Detouring
 		inline ReturnType Call( Definition original, Args &&... args )
 		{
 			return Call( This( ), original, std::forward<Args>( args )... );
+		}
+
+		template<
+			typename Definition,
+			typename Traits = FunctionTraits<Definition>,
+			std::enable_if_t<Traits::IsMemberFunctionPointer, int> = 0
+		>
+		static void* GetOriginalMemberVFunctionPointer( Definition original )
+		{
+			const auto shared_state = GetSharedState( );
+			if ( !shared_state )
+				return nullptr;
+
+			Member target = GetVirtualAddress( shared_state->target_vtable, original );
+			if ( target.IsValid( ) )
+			{
+				void* vfunction = shared_state->original_vtable[target.index];
+				return vfunction;
+			}
+
+			return nullptr;
 		}
 
 	private:
