@@ -374,14 +374,14 @@ namespace Detouring
 			typename Traits = FunctionTraits<Definition>,
 			std::enable_if_t<Traits::IsMemberFunctionPointer, int> = 0
 		>
-		static void* GetOriginalMemberVFunctionPointer( Definition original )
+		static void* GetOriginalVFuncAddress( Definition original )
 		{
 			const auto shared_state = GetSharedState( );
-			if ( !shared_state )
+			if( !shared_state )
 				return nullptr;
 
 			Member target = GetVirtualAddress( shared_state->target_vtable, original );
-			if ( target.IsValid( ) )
+			if( target.IsValid( ) )
 			{
 				void* vfunction = shared_state->original_vtable[target.index];
 				return vfunction;
