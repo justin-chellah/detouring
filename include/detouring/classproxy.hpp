@@ -277,23 +277,34 @@ namespace Detouring
 
 			return true;
 		}
+		
+		template<typename T>
+		using RefToPtr = std::conditional_t<
+			std::is_reference_v<T>,
+			std::remove_reference_t<T> *,
+			T
+		>;
 
 		template<
 			typename Definition,
 			typename... Args,
 			typename Traits = FunctionTraits<Definition>,
-			typename ReturnType = typename Traits::ReturnType,
 			std::enable_if_t<!Traits::IsMemberFunctionPointer, int> = 0
 		>
-		static ReturnType Call(
+		static auto Call(
 			Target *instance,
 			Definition original,
 			Args &&... args
 		)
 		{
+			using ReturnType = RefToPtr<typename Traits::ReturnType>;
+			
 			const auto shared_state = GetSharedState( );
 			if( !shared_state )
-				return ReturnType( );
+				if constexpr( std::is_pointer_v<ReturnType> )
+					return static_cast< ReturnType >( nullptr );
+				else
+					return ReturnType( );
 
 			void *address = reinterpret_cast<void *>( original ), *target = nullptr;
 			const auto it = shared_state->hooks.find( address );
@@ -304,28 +315,38 @@ namespace Detouring
 				target = address;
 
 			if( target == nullptr )
-				return ReturnType( );
+				if constexpr( std::is_pointer_v<ReturnType> )
+					return static_cast< ReturnType >( nullptr );
+				else
+					return ReturnType( );
 
 			auto method = reinterpret_cast<Definition>( target );
-			return method( instance, std::forward<Args>( args )... );
+			if constexpr( std::is_pointer_v<ReturnType> )
+				return &method( instance, std::forward<Args>( args )... );
+			else
+				return method( instance, std::forward<Args>( args )... );
 		}
 
 		template<
 			typename Definition,
 			typename... Args,
 			typename Traits = FunctionTraits<Definition>,
-			typename ReturnType = typename Traits::ReturnType,
 			std::enable_if_t<Traits::IsMemberFunctionPointer, int> = 0
 		>
-		static ReturnType Call(
+		static auto Call(
 			Target *instance,
 			Definition original,
 			Args &&... args
 		)
 		{
+			using ReturnType = RefToPtr<typename Traits::ReturnType>;
+			
 			const auto shared_state = GetSharedState( );
 			if( !shared_state )
-				return ReturnType( );
+				if constexpr( std::is_pointer_v<ReturnType> )
+					return static_cast< ReturnType >( nullptr );
+				else
+					return ReturnType( );
 
 			void *address = GetAddress( original );
 			void *final_address = nullptr;
@@ -343,7 +364,10 @@ namespace Detouring
 			if( final_address == nullptr )
 			{
 				if( address == nullptr )
-					return ReturnType( );
+					if constexpr( std::is_pointer_v<ReturnType> )
+						return static_cast< ReturnType >( nullptr );
+					else
+						return ReturnType( );
 
 				final_address = address;
 			}
@@ -355,14 +379,17 @@ namespace Detouring
 				const size_t unused[2] = { 0, 0 };
 			} func = { final_address };
 			auto typedfunc = reinterpret_cast<Definition *>( &func );
-			return ( instance->**typedfunc )( std::forward<Args>( args )... );
+			if constexpr( std::is_pointer_v<ReturnType> )
+				return &( instance->**typedfunc )( std::forward<Args>( args )... );
+			else
+				return ( instance->**typedfunc )( std::forward<Args>( args )... );
 		}
 
 		template<
 			typename Definition,
 			typename... Args,
 			typename Traits = FunctionTraits<Definition>,
-			typename ReturnType = typename Traits::ReturnType
+			typename ReturnType = RefToPtr<typename Traits::ReturnType>
 		>
 		inline ReturnType Call( Definition original, Args &&... args )
 		{
