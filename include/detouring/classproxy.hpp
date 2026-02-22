@@ -301,7 +301,7 @@ namespace Detouring
 			
 			const auto shared_state = GetSharedState( );
 			if( !shared_state )
-				if constexpr( std::is_pointer_v<ReturnType> )
+				if constexpr( std::is_reference_v<typename Traits::ReturnType> )
 					return static_cast< ReturnType >( nullptr );
 				else
 					return ReturnType( );
@@ -315,13 +315,13 @@ namespace Detouring
 				target = address;
 
 			if( target == nullptr )
-				if constexpr( std::is_pointer_v<ReturnType> )
+				if constexpr( std::is_reference_v<typename Traits::ReturnType> )
 					return static_cast< ReturnType >( nullptr );
 				else
 					return ReturnType( );
 
 			auto method = reinterpret_cast<Definition>( target );
-			if constexpr( std::is_pointer_v<ReturnType> )
+			if constexpr( std::is_reference_v<typename Traits::ReturnType> )
 				return &method( instance, std::forward<Args>( args )... );
 			else
 				return method( instance, std::forward<Args>( args )... );
@@ -343,7 +343,7 @@ namespace Detouring
 			
 			const auto shared_state = GetSharedState( );
 			if( !shared_state )
-				if constexpr( std::is_pointer_v<ReturnType> )
+				if constexpr( std::is_reference_v<typename Traits::ReturnType> )
 					return static_cast< ReturnType >( nullptr );
 				else
 					return ReturnType( );
@@ -364,7 +364,7 @@ namespace Detouring
 			if( final_address == nullptr )
 			{
 				if( address == nullptr )
-					if constexpr( std::is_pointer_v<ReturnType> )
+					if constexpr( std::is_reference_v<typename Traits::ReturnType> )
 						return static_cast< ReturnType >( nullptr );
 					else
 						return ReturnType( );
@@ -379,7 +379,7 @@ namespace Detouring
 				const size_t unused[2] = { 0, 0 };
 			} func = { final_address };
 			auto typedfunc = reinterpret_cast<Definition *>( &func );
-			if constexpr( std::is_pointer_v<ReturnType> )
+			if constexpr( std::is_reference_v<typename Traits::ReturnType> )
 				return &( instance->**typedfunc )( std::forward<Args>( args )... );
 			else
 				return ( instance->**typedfunc )( std::forward<Args>( args )... );
